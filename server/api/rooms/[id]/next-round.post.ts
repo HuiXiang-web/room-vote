@@ -24,12 +24,15 @@ export default defineEventHandler(async (event) => {
   }
 
   if (room.creator_id !== body.creatorId) {
-    throw createError({ statusCode: 403, statusMessage: '仅主持人可完成本轮' })
+    throw createError({ statusCode: 403, statusMessage: '仅主持人可操作' })
   }
 
   const { error: updateError } = await supabase
     .from('rooms')
-    .update({ round_finished: true })
+    .update({
+      vote_round: room.vote_round + 1,
+      round_finished: false
+    })
     .eq('id', id)
 
   if (updateError) {

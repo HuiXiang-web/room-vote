@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
 
   const { data, error } = await supabase
     .from('rooms')
-    .select('id, name, creator_id, collection_id, vote_round')
+    .select('id, name, creator_id, collection_id, vote_round, round_finished')
     .eq('id', id)
     .single()
 
@@ -36,6 +36,7 @@ export default defineEventHandler(async (event) => {
     creatorId: data.creator_id,
     collectionId: data.collection_id,
     voteRound: data.vote_round,
+    roundFinished: data.round_finished,
     members: (members || []).map(m => ({ nickname: m.nickname, isHost: m.creator_id === data.creator_id })),
     votes: (votes || []).map(v => ({
       nickname: v.nickname,

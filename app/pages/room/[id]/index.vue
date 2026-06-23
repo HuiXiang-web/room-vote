@@ -44,44 +44,88 @@
       <template v-else>
         <div class="mb-4 rounded-xl bg-white p-4">
           <h2 class="mb-3 text-sm font-semibold text-gray-500">
-            第 {{ roomData?.voteRound }} 轮投票
-            <template v-if="topVoted">
+            第 {{ roomData?.roundFinished ? roomData?.voteRound : roomData?.voteRound }} 轮投票
+            <template v-if="topVoted && !roomData?.roundFinished">
               · <span class="text-primary-600">{{ topVoted }}</span>
             </template>
           </h2>
 
-          <div
-            v-if="votes && votes.length > 0"
-            class="flex flex-col gap-2"
-          >
+          <template v-if="roomData?.roundFinished">
             <div
-              v-for="vote in votes"
-              :key="vote.nickname"
-              class="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2"
+              v-if="votes && votes.length > 0"
+              class="flex flex-col gap-2"
+            >
+              <div class="rounded-lg bg-primary-50 px-4 py-3 text-center">
+                <p class="text-xs text-primary-500">
+                  最终胜出
+                </p>
+                <p class="mt-1 text-base font-bold text-primary-700">
+                  {{ getWinner() }}
+                </p>
+              </div>
+              <div
+                v-for="vote in votes"
+                :key="vote.nickname"
+                class="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2"
+              >
+                <UIcon
+                  :name="vote.itemId === '_skip_' ? 'i-lucide-minus-circle' : 'i-lucide-check-circle'"
+                  class="size-4 shrink-0"
+                  :class="vote.itemId === '_skip_' ? 'text-gray-400' : 'text-green-500'"
+                />
+                <span class="font-medium text-sm">{{ vote.nickname }}</span>
+                <span class="text-gray-400 text-sm">—</span>
+                <span class="truncate text-sm">{{ vote.itemId === '_skip_' ? '已放弃' : vote.itemTitle }}</span>
+              </div>
+            </div>
+            <div
+              v-else
+              class="rounded-lg border border-dashed border-gray-200 py-6 text-center"
             >
               <UIcon
-                :name="vote.itemId === '_skip_' ? 'i-lucide-minus-circle' : 'i-lucide-check-circle'"
-                class="size-4 shrink-0"
-                :class="vote.itemId === '_skip_' ? 'text-gray-400' : 'text-green-500'"
+                name="i-lucide-vote"
+                class="mx-auto mb-2 size-6 text-gray-300"
               />
-              <span class="font-medium text-sm">{{ vote.nickname }}</span>
-              <span class="text-gray-400 text-sm">—</span>
-              <span class="truncate text-sm">{{ vote.itemId === '_skip_' ? '已放弃' : vote.itemTitle }}</span>
+              <p class="text-sm text-gray-400">
+                本轮无人投票
+              </p>
             </div>
-          </div>
+          </template>
 
-          <div
-            v-else
-            class="rounded-lg border border-dashed border-gray-200 py-6 text-center"
-          >
-            <UIcon
-              name="i-lucide-vote"
-              class="mx-auto mb-2 size-6 text-gray-300"
-            />
-            <p class="text-sm text-gray-400">
-              点击下方按钮参与投票
-            </p>
-          </div>
+          <template v-else>
+            <div
+              v-if="votes && votes.length > 0"
+              class="flex flex-col gap-2"
+            >
+              <div
+                v-for="vote in votes"
+                :key="vote.nickname"
+                class="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2"
+              >
+                <UIcon
+                  :name="vote.itemId === '_skip_' ? 'i-lucide-minus-circle' : 'i-lucide-check-circle'"
+                  class="size-4 shrink-0"
+                  :class="vote.itemId === '_skip_' ? 'text-gray-400' : 'text-green-500'"
+                />
+                <span class="font-medium text-sm">{{ vote.nickname }}</span>
+                <span class="text-gray-400 text-sm">—</span>
+                <span class="truncate text-sm">{{ vote.itemId === '_skip_' ? '已放弃' : vote.itemTitle }}</span>
+              </div>
+            </div>
+
+            <div
+              v-else
+              class="rounded-lg border border-dashed border-gray-200 py-6 text-center"
+            >
+              <UIcon
+                name="i-lucide-vote"
+                class="mx-auto mb-2 size-6 text-gray-300"
+              />
+              <p class="text-sm text-gray-400">
+                点击下方按钮参与投票
+              </p>
+            </div>
+          </template>
         </div>
 
         <div class="rounded-xl bg-white p-4">
@@ -142,38 +186,55 @@
     </div>
 
     <div class="flex shrink-0 gap-2 bg-white px-4 py-3">
-      <UButton
-        block
-        color="neutral"
-        variant="subtle"
-        :disabled="actionLoading"
-        @click="handleSkip"
-      >
-        放弃
-      </UButton>
-      <UButton
-        block
-        :disabled="actionLoading"
-        @click="handleVote"
-      >
-        投票
-      </UButton>
-      <template v-if="isHost">
+      <template v-if="isHost && roomData?.roundFinished">
         <UButton
           block
-          color="warning"
+          size="lg"
+          :disabled="nextRoundLoading"
+          @click="handleNextRound"
+        >
+          {{ nextRoundLoading ? '加载中...' : '下一轮' }}
+        </UButton>
+      </template>
+      <template v-else-if="!roomData?.roundFinished">
+        <UButton
+          block
+          color="neutral"
           variant="subtle"
           :disabled="actionLoading"
-          @click="handleFinish"
+          @click="handleSkip"
         >
-          完成本轮
+          放弃
         </UButton>
         <UButton
-          icon="i-lucide-settings"
-          color="neutral"
-          variant="ghost"
-          @click="showSettingsModal = true"
-        />
+          block
+          :disabled="actionLoading"
+          @click="handleVote"
+        >
+          投票
+        </UButton>
+        <template v-if="isHost">
+          <UButton
+            block
+            color="warning"
+            variant="subtle"
+            :disabled="actionLoading"
+            @click="handleFinishClick"
+          >
+            完成本轮
+          </UButton>
+          <UButton
+            icon="i-lucide-settings"
+            color="neutral"
+            variant="ghost"
+            @click="showSettingsModal = true"
+          />
+        </template>
+      </template>
+      <template v-else>
+        <p class="flex-1 py-2 text-center text-sm text-gray-400">
+          等待主持人开始下一轮
+        </p>
       </template>
     </div>
 
@@ -220,6 +281,57 @@
         </div>
       </template>
     </UModal>
+
+    <UModal
+      v-model:open="showResultModal"
+      title="本轮投票结果"
+    >
+      <template #body>
+        <div class="flex flex-col gap-4">
+          <div class="rounded-lg bg-primary-50 px-4 py-3 text-center">
+            <p class="text-sm text-primary-600">
+              最终胜出
+            </p>
+            <p class="mt-1 text-lg font-bold text-primary-700">
+              {{ finishResult?.winner || '—' }}
+            </p>
+          </div>
+          <div class="flex flex-col gap-2">
+            <div
+              v-for="item in finishResult?.stats || []"
+              :key="item.title"
+              class="flex items-center gap-2 text-sm"
+            >
+              <span class="truncate flex-1">{{ item.title }}</span>
+              <span class="tabular-nums text-gray-500">{{ item.count }} 票</span>
+            </div>
+          </div>
+          <div
+            v-if="finishResult?.tied"
+            class="text-xs text-amber-600"
+          >
+            平票，已随机选中一项作为胜出
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UButton
+            variant="outline"
+            color="neutral"
+            @click="showResultModal = false"
+          >
+            取消
+          </UButton>
+          <UButton
+            :disabled="finishing || resultLoading"
+            @click="handleFinish"
+          >
+            {{ finishing ? '完成中...' : '确认完成' }}
+          </UButton>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>
 
@@ -230,6 +342,9 @@ const nicknameCookie = useNickname()
 
 const actionLoading = ref(false)
 const showSettingsModal = ref(false)
+const showResultModal = ref(false)
+const finishing = ref(false)
+const nextRoundLoading = ref(false)
 const settingsCollectionId = ref('')
 const settingsLoading = ref(false)
 const settingsError = ref('')
@@ -261,6 +376,19 @@ const topVoted = computed(() => {
   }
   return max > 0 ? `${top} (${max} 票)` : ''
 })
+
+function getWinner() {
+  const counts = {}
+  for (const v of votes.value) {
+    if (v.itemId === '_skip_') continue
+    counts[v.itemTitle] = (counts[v.itemTitle] || 0) + 1
+  }
+  const entries = Object.entries(counts)
+  if (entries.length === 0) return '无人投票'
+  const max = Math.max(...entries.map(e => e[1]))
+  const top = entries.filter(e => e[1] === max)
+  return top[0][0]
+}
 
 const voteStatusMap = computed(() => {
   const map = {}
@@ -345,8 +473,49 @@ function handleVote() {
   navigateTo(`/room/${roomId.value}/vote`)
 }
 
+const finishResult = ref(null)
+const resultLoading = ref(false)
+
+async function handleFinishClick() {
+  const statsMap = {}
+  for (const v of votes.value) {
+    if (v.itemId === '_skip_') continue
+    statsMap[v.itemTitle] = (statsMap[v.itemTitle] || 0) + 1
+  }
+  const stats = Object.entries(statsMap)
+    .map(([title, count]) => ({ title, count }))
+    .sort((a, b) => b.count - a.count)
+
+  if (stats.length === 0) {
+    resultLoading.value = true
+    showResultModal.value = true
+    finishResult.value = { winner: '随机选取中...', stats: [], tied: false }
+    try {
+      const items = await $fetch(`/api/rooms/${roomId.value}/collection`)
+      if (items && items.length > 0) {
+        const pick = items[Math.floor(Math.random() * items.length)]
+        finishResult.value = { winner: pick.title, stats: [], tied: true }
+      } else {
+        finishResult.value = { winner: '合集为空', stats: [], tied: false }
+      }
+    } catch {
+      finishResult.value = { winner: '加载合集失败', stats: [], tied: false }
+    } finally {
+      resultLoading.value = false
+    }
+  } else {
+    const top = stats.filter(s => s.count === stats[0].count)
+    const tied = top.length > 1
+    const winner = tied
+      ? top[Math.floor(Math.random() * top.length)].title
+      : top[0].title
+    finishResult.value = { winner, stats, tied }
+    showResultModal.value = true
+  }
+}
+
 async function handleFinish() {
-  actionLoading.value = true
+  finishing.value = true
   try {
     await $fetch(`/api/rooms/${roomId.value}/finish`, {
       method: 'POST',
@@ -354,10 +523,26 @@ async function handleFinish() {
     })
     await refresh()
     scrollToBottom()
+    showResultModal.value = false
   } catch {
     // ignore
   } finally {
-    actionLoading.value = false
+    finishing.value = false
+  }
+}
+
+async function handleNextRound() {
+  nextRoundLoading.value = true
+  try {
+    await $fetch(`/api/rooms/${roomId.value}/next-round`, {
+      method: 'POST',
+      body: { creatorId: creatorId.value }
+    })
+    await refresh()
+  } catch {
+    // ignore
+  } finally {
+    nextRoundLoading.value = false
   }
 }
 
