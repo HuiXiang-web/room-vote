@@ -1,0 +1,10 @@
+### Send request with dynamic variables in request's body
+POST https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/
+Content-Type: application/json
+
+{
+  "itemcount": 50,
+  "publishedfileids": 3749034386
+}
+
+###
