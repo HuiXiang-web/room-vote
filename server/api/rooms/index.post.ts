@@ -15,7 +15,8 @@ export default defineEventHandler(async (event) => {
     .insert({
       name: body.name.trim(),
       password: body.password?.trim() || null,
-      creator_id: body.creatorId
+      creator_id: body.creatorId,
+      collection_id: body.collectionId || '3749034386'
     })
     .select('id, name, password, creator_id')
     .single()

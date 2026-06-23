@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto max-w-4xl px-4 py-8">
+  <div class="mx-auto min-h-dvh max-w-4xl px-4 py-8 bg-gray-50">
     <div class="mb-8 flex items-center justify-between">
       <h1 class="text-3xl font-bold">
         房间
@@ -106,6 +106,17 @@
               class="w-full"
               type="password"
               placeholder="设置密码（选填）"
+              @keyup.enter="handleCreate"
+            />
+          </UFormField>
+          <UFormField
+            label="合集 ID"
+            hint="Steam 创意工坊合集 ID，默认为 3749034386"
+          >
+            <UInput
+              v-model="newRoom.collectionId"
+              class="w-full"
+              placeholder="3749034386"
               @keyup.enter="handleCreate"
             />
           </UFormField>
@@ -248,7 +259,8 @@ const deleting = ref(false)
 
 const newRoom = reactive({
   name: '',
-  password: ''
+  password: '',
+  collectionId: ''
 })
 const createError = ref('')
 const joinError = ref('')
@@ -269,6 +281,7 @@ function isOwner(room) {
 function resetCreateForm() {
   newRoom.name = ''
   newRoom.password = ''
+  newRoom.collectionId = ''
   createError.value = ''
 }
 
@@ -284,7 +297,8 @@ async function handleCreate() {
       body: {
         name,
         password: newRoom.password.trim() || undefined,
-        creatorId: creatorId.value
+        creatorId: creatorId.value,
+        collectionId: newRoom.collectionId.trim() || undefined
       }
     })
     showCreateModal.value = false

@@ -1,6 +1,6 @@
 <template>
-  <div class="mx-auto flex h-dvh max-w-2xl flex-col">
-    <div class="flex items-center gap-3 border-b px-4 py-3">
+  <div class="mx-auto flex h-dvh max-w-2xl flex-col bg-gray-100">
+    <div class="flex shrink-0 items-center gap-3 bg-white px-4 py-3">
       <UButton
         icon="i-lucide-arrow-left"
         variant="ghost"
@@ -21,9 +21,9 @@
     <div class="flex-1 overflow-auto px-4 py-4">
       <div
         v-if="!roomData"
-        class="flex flex-col gap-6"
+        class="flex flex-col gap-4"
       >
-        <div class="space-y-2">
+        <div class="space-y-2 rounded-xl bg-white p-4">
           <div class="h-4 w-24 animate-pulse rounded bg-gray-200" />
           <div
             v-for="i in 3"
@@ -31,7 +31,7 @@
             class="h-12 animate-pulse rounded-lg bg-gray-200"
           />
         </div>
-        <div class="space-y-2">
+        <div class="space-y-2 rounded-xl bg-white p-4">
           <div class="h-4 w-20 animate-pulse rounded bg-gray-200" />
           <div
             v-for="i in 3"
@@ -42,18 +42,22 @@
       </div>
 
       <template v-else>
-        <div
-          v-if="votes && votes.length > 0"
-          class="mb-6"
-        >
+        <div class="mb-4 rounded-xl bg-white p-4">
           <h2 class="mb-3 text-sm font-semibold text-gray-500">
             第 {{ roomData?.voteRound }} 轮投票
+            <template v-if="topVoted">
+              · <span class="text-primary-600">{{ topVoted }}</span>
+            </template>
           </h2>
-          <div class="flex flex-col gap-2">
+
+          <div
+            v-if="votes && votes.length > 0"
+            class="flex flex-col gap-2"
+          >
             <div
               v-for="vote in votes"
               :key="vote.nickname"
-              class="flex items-center gap-2 rounded-lg border px-3 py-2"
+              class="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2"
             >
               <UIcon
                 :name="vote.itemId === '_skip_' ? 'i-lucide-minus-circle' : 'i-lucide-check-circle'"
@@ -65,22 +69,22 @@
               <span class="truncate text-sm">{{ vote.itemId === '_skip_' ? '已放弃' : vote.itemTitle }}</span>
             </div>
           </div>
+
+          <div
+            v-else
+            class="rounded-lg border border-dashed border-gray-200 py-6 text-center"
+          >
+            <UIcon
+              name="i-lucide-vote"
+              class="mx-auto mb-2 size-6 text-gray-300"
+            />
+            <p class="text-sm text-gray-400">
+              点击下方按钮参与投票
+            </p>
+          </div>
         </div>
 
-        <div
-          v-else
-          class="mb-6 rounded-lg border border-dashed py-8 text-center"
-        >
-          <UIcon
-            name="i-lucide-vote"
-            class="mx-auto mb-2 size-8 text-gray-300"
-          />
-          <p class="text-sm text-gray-400">
-            点击下方按钮参与投票
-          </p>
-        </div>
-
-        <div>
+        <div class="rounded-xl bg-white p-4">
           <h2 class="mb-3 text-sm font-semibold text-gray-500">
             当前用户 ({{ members?.length || 0 }})
           </h2>
@@ -88,7 +92,7 @@
             <div
               v-for="member in members"
               :key="member.nickname"
-              class="flex items-center gap-2 rounded px-3 py-1.5"
+              class="flex items-center gap-2 rounded-lg px-3 py-1.5"
             >
               <UIcon
                 name="i-lucide-user"
@@ -107,6 +111,11 @@
               >
                 (我)
               </span>
+              <UIcon
+                :name="voteStatusIcon(member.nickname)"
+                class="ml-auto size-4 shrink-0"
+                :class="voteStatusColor(member.nickname)"
+              />
             </div>
           </div>
         </div>
@@ -115,7 +124,7 @@
 
     <div
       v-if="roomData?.collectionId"
-      class="flex items-center gap-1.5 border-t px-4 py-2"
+      class="flex shrink-0 items-center gap-1.5 bg-white px-4 py-2"
     >
       <span class="shrink-0 text-xs text-gray-400">合集</span>
       <button
@@ -132,7 +141,7 @@
       </span>
     </div>
 
-    <div class="flex gap-2 border-t px-4 py-3">
+    <div class="flex shrink-0 gap-2 bg-white px-4 py-3">
       <UButton
         block
         color="neutral"
@@ -235,6 +244,44 @@ const isHost = computed(() => creatorId.value === roomData.value?.creatorId)
 const votes = computed(() => roomData.value?.votes || [])
 const members = computed(() => roomData.value?.members || [])
 const collectionUrl = computed(() => `https://steamcommunity.com/sharedfiles/filedetails/?id=${roomData.value?.collectionId || ''}`)
+
+const topVoted = computed(() => {
+  const counts = {}
+  for (const v of votes.value) {
+    if (v.itemId === '_skip_') continue
+    counts[v.itemTitle] = (counts[v.itemTitle] || 0) + 1
+  }
+  let top = ''
+  let max = 0
+  for (const [title, count] of Object.entries(counts)) {
+    if (count > max) {
+      max = count
+      top = title
+    }
+  }
+  return max > 0 ? `${top} (${max} 票)` : ''
+})
+
+const voteStatusMap = computed(() => {
+  const map = {}
+  for (const v of votes.value) {
+    map[v.nickname] = v.itemId === '_skip_' ? 'skipped' : 'voted'
+  }
+  return map
+})
+
+function voteStatusIcon(nickname) {
+  const status = voteStatusMap.value[nickname]
+  if (status === 'voted') return 'i-lucide-check-circle'
+  if (status === 'skipped') return 'i-lucide-minus-circle'
+  return 'i-lucide-circle'
+}
+function voteStatusColor(nickname) {
+  const status = voteStatusMap.value[nickname]
+  if (status === 'voted') return 'text-green-500'
+  if (status === 'skipped') return 'text-gray-400'
+  return 'text-gray-300'
+}
 
 const copied = ref(false)
 let copiedTimer = null

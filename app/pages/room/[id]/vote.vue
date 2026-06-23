@@ -1,6 +1,6 @@
 <template>
-  <div class="mx-auto flex h-dvh max-w-2xl flex-col">
-    <div class="flex items-center gap-3 border-b px-4 py-3">
+  <div class="mx-auto flex h-dvh max-w-2xl flex-col bg-gray-100">
+    <div class="flex shrink-0 items-center gap-3 bg-white px-4 py-3">
       <UButton
         icon="i-lucide-arrow-left"
         variant="ghost"
@@ -82,7 +82,7 @@
         <button
           v-for="item in items"
           :key="item.id"
-          class="flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors hover:border-primary-400 hover:bg-primary-50"
+          class="flex cursor-pointer items-center gap-3 rounded-xl bg-white px-4 py-3 text-left shadow-sm transition-shadow hover:shadow-md"
           :disabled="submitting"
           @click="handleSelect(item)"
         >
@@ -90,13 +90,13 @@
             v-if="item.previewUrl"
             :src="item.previewUrl"
             :alt="item.title"
-            class="size-12 shrink-0 rounded object-cover"
+            class="size-12 shrink-0 rounded-lg object-cover"
             loading="lazy"
           >
           <UIcon
             v-else
             name="i-lucide-image"
-            class="size-12 shrink-0 rounded bg-gray-100 p-3 text-gray-400"
+            class="size-12 shrink-0 rounded-lg bg-gray-100 p-3 text-gray-400"
           />
           <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-medium">
